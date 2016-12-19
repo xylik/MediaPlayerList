@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:id="@+id/momentRootLyt"
+              xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:layout_marginBottom="7dp"
+              android:background="#262626"
+              android:orientation="vertical">
+
+    <RelativeLayout android:layout_width="match_parent"
+                    android:layout_height="216dp"
+                    android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center">
+
+            <TextureView
+                android:id="@+id/playerSurface"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/videoThubnailImg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"/>
+
+        <include
+            layout="@layout/progress_bar"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_centerInParent="true"/>
+
+        <include layout="@layout/moment_counter"/>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/videoDescTV"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:text="Description"
+        android:gravity="center"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"/>
+</LinearLayout>

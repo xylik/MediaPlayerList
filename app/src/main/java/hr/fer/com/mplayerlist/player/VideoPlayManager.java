@@ -50,8 +50,12 @@ public class VideoPlayManager {
     public synchronized void playFromUri(Uri httpVideoUri, int videoId, long startMs, long endMs, boolean playInLoop, boolean playWhenReady) {
         Log.d("igorLog", "playFromUri() -> playerMng: momentId:" + videoId);
         lastPlayRequest = new PlayRequest(videoId, startMs, endMs, httpVideoUri, playInLoop, playWhenReady);
-        if(isPlayerPlaying() || !setIsPlaying(true)) return;
-        else playFromUriInternal(httpVideoUri, videoId, startMs, endMs, playInLoop, playWhenReady);
+//        if(isPlayerPlaying() || !setIsPlaying(true)) return;
+        if(isPlayerPlaying()) return;
+        else {
+            isPlaying = true;
+            playFromUriInternal(httpVideoUri, videoId, startMs, endMs, playInLoop, playWhenReady);
+        }
     }
 
     private void playFromUriInternal(Uri videoPath, int videoId, long startMs, long endMs, boolean playInLoop, boolean playWhenReady) {

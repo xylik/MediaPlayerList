@@ -5,6 +5,7 @@ import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import net.protyposis.android.mediaplayer.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
@@ -145,42 +146,50 @@ public class MediaPlayerImp implements IPlayer {
         // release();
         if(mMediaPlayer != null) Log.d("igorLog", "openVideo() -> mp != null, currentState=" + mCurrentState);
 
-        try {
-            AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-            am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+        AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
 
-            mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setSeekMode(MediaPlayer.SeekMode.PRECISE);
-            mMediaPlayer.setOnPreparedListener(mPreparedListener);
-            mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
-            mMediaPlayer.setOnCompletionListener(mCompletionListener);
-            mMediaPlayer.setOnErrorListener(mErrorListener);
-            mMediaPlayer.setOnBufferingUpdateListener(mBufferingUpdateListener);
-            mCurrentBufferPercentage = 0;
-            mMediaPlayer.setDataSource(mContext, mUri, mHeaders);
-            mMediaPlayer.setSurface(new Surface(mDrawingSurface));
-            //#Media player specific api
-            //mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            //mMediaPlayer.setScreenOnWhilePlaying(true);
-            mMediaPlayer.prepareAsync();
-            mCurrentState = STATE_PREPARING;
-        } catch (IOException ex) {
-            Log.w(TAG, "Unable to open content: " + mUri, ex);
-            mCurrentState = STATE_ERROR;
-            mTargetState = STATE_ERROR;
+        mMediaPlayer = new MediaPlayer();
+        mMediaPlayer.setSeekMode(MediaPlayer.SeekMode.PRECISE);
+        mMediaPlayer.setOnPreparedListener(mPreparedListener);
+        mMediaPlayer.setOnVideoSizeChangedListener(mSizeChangedListener);
+        mMediaPlayer.setOnCompletionListener(mCompletionListener);
+        mMediaPlayer.setOnErrorListener(mErrorListener);
+        mMediaPlayer.setOnBufferingUpdateListener(mBufferingUpdateListener);
+        mCurrentBufferPercentage = 0;
+        mMediaPlayer.setSurface(new Surface(mDrawingSurface));
+        //#Media player specific api
+        //mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        //mMediaPlayer.setScreenOnWhilePlaying(true);
 
-            mErrorListener.onError(mMediaPlayer, MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
-            release();
-            return;
-        } catch (IllegalArgumentException ex) {
-            Log.w(TAG, "Unable to open content: " + mUri, ex);
-            mCurrentState = STATE_ERROR;
-            mTargetState = STATE_ERROR;
+        mCurrentState = STATE_PREPARING;
+        new AsyncTask<Void, Void, Void>() {
+            private Exception mException;
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    mMediaPlayer.setDataSource(mContext, mUri, mHeaders);
+                    mMediaPlayer.prepare();
+                } catch (IOException e) {
+                    mException = e;
+                }
+                return null;
+            }
 
-            mErrorListener.onError(mMediaPlayer, MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
-            release();
-            return;
-        }
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                if(mException != null) {
+                    Log.w(TAG, "Unable to open content: " + mUri, mException);
+                    mCurrentState = STATE_ERROR;
+                    mTargetState = STATE_ERROR;
+
+                    mErrorListener.onError(mMediaPlayer, MediaPlayer.MEDIA_ERROR_UNKNOWN, 0);
+                    release();
+                } else {
+                    mPreparedListener.onPrepared(mMediaPlayer);
+                }
+            }
+        }.execute();
     }
 
     private void startTimer() {
@@ -349,7 +358,14 @@ public class MediaPlayerImp implements IPlayer {
             mMediaPlayer.setOnBufferingUpdateListener(null);
             //#VideoView implementation
             //mMediaPlayer.reset();
-            mMediaPlayer.release();
+            MediaPlayer mediaPlayer = mMediaPlayer;
+            new AsyncTask<Void, Void, Void>() {
+                @Override
+                protected Void doInBackground(Void... params) {
+                    mediaPlayer.release();
+                    return null;
+                }
+            }.execute();
             mMediaPlayer = null;
             AudioManager am = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
             am.abandonAudioFocus(null);
